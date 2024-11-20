@@ -10,36 +10,16 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import Stepper from "./Stepper";
-
+import Axios from 'axios';
 export default function TravellerInformationPayment({ navigation, route }) {
-  const { totalPrice,
-
-    adultCount,
-    childrenCount,
-    infantCount,
-    fromLocation,
-    toLocation,
-    departureDate,
-    returnDate,
-
-    selectedClass,
-    flightType,
-    locations, airline, departureFlight, returnFlight, legs, price, travellers, username, avatar } = route.params;
-
+  const { totalPrice, adultCount, childrenCount, infantCount, fromLocation, toLocation, departureDate, returnDate, selectedClass, flightType, locations, airline, departureFlight, returnFlight, legs, price, travellers, username, avatar } = route.params;
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
-  const [currentCard, setCurrentCard] = useState({
-    number: "**** 9876",
-    expiryDate: "MM/YY",
-    cvv: "***",
-  });
+  const [currentCard, setCurrentCard] = useState({ number: "**** 9876", expiryDate: "MM/YY", cvv: "***" });
 
-  useEffect(() => {
-    console.log(travellers)
-  }, [])
   const openModal = (edit = false) => {
     if (edit) {
       setCardNumber(currentCard.number);
@@ -62,31 +42,47 @@ export default function TravellerInformationPayment({ navigation, route }) {
 
   const saveCard = () => {
     if (cardNumber && expiryDate && cvv) {
-      setCurrentCard({
-        number: cardNumber,
-        expiryDate: expiryDate,
-        cvv: cvv,
-      });
+      setCurrentCard({ number: cardNumber, expiryDate: expiryDate, cvv: cvv });
       closeModal();
     } else {
       alert("Please fill all fields.");
     }
   };
 
+  const handleCheckout = async () => {
+    try {
+      const response = await Axios.post('http://localhost:4000/api/flights', {
+        totalPrice,
+        adultCount,
+        childrenCount,
+        infantCount,
+        fromLocation,
+        toLocation,
+        departureDate,
+        returnDate,
+        selectedClass,
+        flightType,
+        locations,
+        airline,
+        departureFlight: JSON.stringify(departureFlight),
+        returnFlight: JSON.stringify(returnFlight),
+        legs,
+        price,
+        travellers,
+        username,
+        avatar,
+      });
+      console.log(response.data);
+      navigation.navigate("BookingSuccess", { totalPrice: `${price * (adultCount + childrenCount + infantCount)}`, adultCount, childrenCount, infantCount, fromLocation, toLocation, departureDate, returnDate, selectedClass, flightType, locations, airline, departureFlight, returnFlight, legs, price, travellers, username, avatar });
+    } catch (error) {
+      console.error('Error uploading flight data:', error);
+      alert('Failed to upload flight data');
+    }
+  };
+
   return (
     <View>
-      <View
-        style={{
-          backgroundColor: "#fff",
-          alignItems: "center",
-          paddingVertical: 10,
-          shadowColor: "#000",
-          shadowOpacity: 0.1,
-          shadowRadius: 5,
-          elevation: 3,
-          marginBottom: 10,
-        }}
-      >
+      <View style={{ backgroundColor: "#fff", alignItems: "center", paddingVertical: 10, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 5, elevation: 3, marginBottom: 10 }}>
         <Stepper navigation={navigation} currentStep={4} />
       </View>
       <View style={styles.container}>
@@ -98,17 +94,12 @@ export default function TravellerInformationPayment({ navigation, route }) {
           <View style={styles.paymentCard}>
             <View style={styles.paymentDetails}>
               <FontAwesome name="cc-mastercard" size={24} color="#f24e1e" />
-              <Text style={styles.cardType}>
-                MasterCard {currentCard.number}
-              </Text>
+              <Text style={styles.cardType}>MasterCard {currentCard.number}</Text>
               <TouchableOpacity onPress={() => openModal(true)}>
                 <Text style={styles.editText}>Edit</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.addCardButton}
-              onPress={() => openModal(false)}
-            >
+            <TouchableOpacity style={styles.addCardButton} onPress={() => openModal(false)}>
               <Text style={styles.addCardText}>+ New card</Text>
             </TouchableOpacity>
           </View>
@@ -128,21 +119,11 @@ export default function TravellerInformationPayment({ navigation, route }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact details</Text>
           <View style={styles.contactRow}>
-            <Icon
-              name="email"
-              size={24}
-              color="#333"
-              style={styles.iconSpacing}
-            />
+            <Icon name="email" size={24} color="#333" style={styles.iconSpacing} />
             <Text style={styles.contactInfo}>{travellers.adults[0].email}</Text>
           </View>
           <View style={styles.contactRow}>
-            <Icon
-              name="phone"
-              size={24}
-              color="#333"
-              style={styles.iconSpacing}
-            />
+            <Icon name="phone" size={24} color="#333" style={styles.iconSpacing} />
             <Text style={styles.contactInfo}>{travellers.adults[0].phone}</Text>
           </View>
         </View>
@@ -153,72 +134,24 @@ export default function TravellerInformationPayment({ navigation, route }) {
             <Text style={styles.price}>${totalPrice}</Text>
             <Text style={styles.priceDescription}>{adultCount + childrenCount + infantCount} traveller</Text>
           </View>
-          <TouchableOpacity style={styles.checkoutButton}
-            onPress={() => {
-              navigation.navigate("BookingSuccess", {
-
-                totalPrice: `${price * (adultCount + childrenCount + infantCount)}`,
-
-                adultCount,
-                childrenCount,
-                infantCount,
-                fromLocation,
-                toLocation,
-                departureDate,
-                returnDate,
-
-                selectedClass,
-                flightType,
-                locations, airline, departureFlight, returnFlight, legs, price, travellers,
-                username, avatar
-
-
-              })
-            }}
-          >
+          <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
             <Text style={styles.checkoutText}>Checkout</Text>
           </TouchableOpacity>
         </View>
 
         {/* Modal for New Card */}
-        <Modal
-          visible={isModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={closeModal}
-        >
+        <Modal visible={isModalVisible} animationType="slide" transparent={true} onRequestClose={closeModal}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Add New Card</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Card Number"
-                keyboardType="numeric"
-                value={cardNumber}
-                onChangeText={setCardNumber}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Expiry Date (MM/YY)"
-                value={expiryDate}
-                onChangeText={setExpiryDate}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="CVV"
-                keyboardType="numeric"
-                secureTextEntry={true}
-                value={cvv}
-                onChangeText={setCvv}
-              />
+              <TextInput style={styles.input} placeholder="Card Number" keyboardType="numeric" value={cardNumber} onChangeText={setCardNumber} />
+              <TextInput style={styles.input} placeholder="Expiry Date (MM/YY)" value={expiryDate} onChangeText={setExpiryDate} />
+              <TextInput style={styles.input} placeholder="CVV" keyboardType="numeric" secureTextEntry={true} value={cvv} onChangeText={setCvv} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.saveButton} onPress={saveCard}>
                   <Text style={styles.saveButtonText}>Save</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={closeModal}
-                >
+                <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -229,6 +162,7 @@ export default function TravellerInformationPayment({ navigation, route }) {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

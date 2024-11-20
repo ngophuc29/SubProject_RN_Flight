@@ -71,9 +71,9 @@
             </View>
 
             {/* Buttons */}
-            <TouchableOpacity style={styles.detailButton}>
+            {/* <TouchableOpacity style={styles.detailButton}>
               <Text style={styles.detailButtonText}>Booking detail</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               style={styles.homeButton}
               onPress={() => navigation.navigate("Home", { username, avatar })}

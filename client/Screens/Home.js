@@ -1,16 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, Modal, View, Text, TextInput, Image, ScrollView, StyleSheet } from 'react-native';
 import { Avatar, Icon, Card } from 'react-native-elements';
 import axios from 'axios';
-
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 const Home = ({ navigation, route }) => {
     const { id, username, avatar, email, created_at } = route.params;
     const [modalVisible, setModalVisible] = useState(false);
     const [userDetailsModalVisible, setUserDetailsModalVisible] = useState(false);
+    const [flightListModalVisible, setFlightListModalVisible] = useState(false); // New modal for flights
     const [userDetails, setUserDetails] = useState({
         id, username, email, avatar, created_at, password: '***'
     });
     const [originalDetails, setOriginalDetails] = useState({ username, email, avatar });
+    const [flights, setFlights] = useState([]); // State to store flights
+
+
+    useEffect(() => {
+        const fetchLoginState = async () => {
+            try {
+                const user = await AsyncStorage.getItem('user');
+                if (user) {
+                    setUserDetails(JSON.parse(user));
+                }
+            } catch (error) {
+                console.log("Failed to load user data", error);
+            }
+        };
+        fetchLoginState();
+    }, []);
 
     const openUserDetails = () => {
         setModalVisible(false);
@@ -32,8 +49,48 @@ const Home = ({ navigation, route }) => {
         }
     };
 
+
     const resetDetails = () => {
-        setUserDetails({ ...userDetails, ...originalDetails });
+        // Reset user details to the stored values
+        setUserDetails({
+            ...userDetails,
+            ...JSON.parse(localStorage.getItem("user"))
+        });
+    };
+
+    const loadFlights = async () => {
+        try {
+            const response = await axios.get(`http://localhost:4000/api/flights/${username}`);
+            setFlights(response.data.flights); // Assume the API returns a list of flights
+        } catch (error) {
+            console.log(error);
+            alert("Không thể tải chuyến bay");
+        }
+    };
+
+    const openFlightList = () => {
+        loadFlights(); // Load flights when opening the modal
+        setModalVisible(false);
+        setFlightListModalVisible(true);
+    };
+
+    const generateFlightCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    };
+
+    const handleLogout = async () => {
+        try {
+            await AsyncStorage.removeItem('user'); // Remove user data on logout
+            alert("Đăng xuất thành công");
+            navigation.navigate("DangNhap"); // Redirect to login screen
+        } catch (error) {
+            alert("Đã có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.");
+        }
     };
 
     return (
@@ -102,14 +159,10 @@ const Home = ({ navigation, route }) => {
                         <TouchableOpacity onPress={openUserDetails}>
                             <Text style={styles.modalOption}>Xem thông tin</Text>
                         </TouchableOpacity>
-                        {/* <TouchableOpacity onPress={() => setModalVisible(false)}>
-                            <Text style={styles.modalOption}>Chỉnh sửa</Text>
-                        </TouchableOpacity> */}
-                        <TouchableOpacity onPress={() => {
-                            setModalVisible(false);
-                            navigation.navigate("DangNhap");
-                            alert("Đăng xuất thành công");
-                        }}>
+                        <TouchableOpacity onPress={openFlightList}> {/* New button */}
+                            <Text style={styles.modalOption}>Xem chuyến bay của bạn</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleLogout}>
                             <Text style={styles.modalOption}>Đăng xuất</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
@@ -155,6 +208,59 @@ const Home = ({ navigation, route }) => {
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => setUserDetailsModalVisible(false)} style={styles.closeButton}>
+                            <Text style={styles.closeButtonText}>Đóng</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Flights List Modal */}
+            <Modal animationType="slide" transparent={true} visible={flightListModalVisible} onRequestClose={() => setFlightListModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Chuyến bay của bạn</Text>
+                   
+                        <ScrollView style={{ padding: 10 }}>
+                            {Array.isArray(flights) && flights.length > 0 ? (
+                                flights
+                                    .sort((a, b) => new Date(b.departureDate) - new Date(a.departureDate)) // Sắp xếp theo departureDate giảm dần
+                                    .map((flight, index) => (
+                                        <View key={index} style={{ marginBottom: 15, padding: 15, backgroundColor: '#f9f9f9', borderRadius: 10 }}>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 5 }}>
+                                                Chuyến bay {index + 1} - {flight.fromLocation} → {flight.toLocation}
+                                            </Text>
+                                            {/* Mã chuyến bay ngẫu nhiên */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 5 }}>
+                                                Mã chuyến bay: {generateFlightCode()}
+                                            </Text>
+                                            <Text>{new Date(flight.departureDate).toLocaleDateString()} - {new Date(flight.returnDate).toLocaleDateString()}</Text>
+                                            <Text>Loại vé: {flight.selectedClass}</Text>
+                                            <Text>Giá tổng: ${flight.totalPrice}</Text>
+
+                                            {/* Thông tin chuyến bay đi */}
+                                            <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>
+                                                Đi: {JSON.parse(flight.departureFlight).departureTime} - {JSON.parse(flight.departureFlight).arrivalTime}
+                                                (Hãng: {JSON.parse(flight.departureFlight).airline})
+                                            </Text>
+
+                                            {/* Thông tin chuyến bay về */}
+                                            <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>
+                                                Về: {JSON.parse(flight.returnFlight).departureTime} - {JSON.parse(flight.returnFlight).arrivalTime}
+                                                (Hãng: {JSON.parse(flight.returnFlight).airline})
+                                            </Text>
+
+                                            {/* Số lượng hành khách */}
+                                            <Text>{flight.adultCount} người lớn, {flight.childrenCount} trẻ em, {flight.infantCount} em bé</Text>
+                                        </View>
+                                    ))
+                            ) : (
+                                <Text style={{ textAlign: 'center', fontSize: 16, color: 'gray' }}>Bạn chưa có chuyến bay nào.</Text>
+                            )}
+                        </ScrollView>
+
+
+
+                        <TouchableOpacity onPress={() => setFlightListModalVisible(false)} style={styles.closeButton}>
                             <Text style={styles.closeButtonText}>Đóng</Text>
                         </TouchableOpacity>
                     </View>

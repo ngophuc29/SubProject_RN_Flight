@@ -1,66 +1,64 @@
-import Checkbox from 'expo-checkbox';
 import React, { useState } from 'react';
-import { TouchableOpacity, Image, View, Text, TextInput } from 'react-native';
+import { TouchableOpacity, Image, View, Text, TextInput, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
 const DangNhap = ({ navigation }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-   const handelLogin = async () => {
-        
-
-        if (username !=null && password !=null) { 
+    const handelLogin = async () => {
+        if (username !== '' && password !== '') {
             try {
-            
-            const response = await fetch(`http://localhost:4000/api/users`, {
-                method: 'POST',
-                headers: {
+                const response = await fetch('http://localhost:4000/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
 
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({username  ,password})
+                const data = await response.json();
 
-            })
+                if (response.ok) {
+                    // Tạo object chứa thông tin người dùng
+                    const user = {
+                        user_id: data.id.toString(),
+                        username: username,
+                        avatar: data.avatar,
+                        email: data.email,
+                        created_at: data.created_at,
+                    };
 
-            const data = await response.json()
-            
-            if (response.ok) {
-                console.log(data)
-                navigation.navigate("Home", {
-                     id:data.id,
-                    username: username,
-                    avatar: data.avatar,                  
-                    email: data.email,
-                    created_at: data.created_at
-                })
-                alert("Dang nhap thanh cong")
-                setPassword("")
-                setUsername("")
+                    // Lưu object vào AsyncStorage dưới dạng chuỗi JSON
+                    await AsyncStorage.setItem('user', JSON.stringify(user));
+
+                    // Điều hướng tới màn hình Home và truyền thông tin
+                    navigation.navigate("Home", user);
+
+                    Alert.alert("Đăng nhập thành công");
+
+                    // Xóa các giá trị trong input
+                    setUsername('');
+                    setPassword('');
+                } else {
+                    Alert.alert(data.message || "Lỗi đăng nhập");
+                }
+            } catch (err) {
+                console.log(err);
+                Alert.alert("Có lỗi xảy ra. Vui lòng thử lại");
             }
-            else {
-                alert(data.message)
-            }
-
-        } catch(err) {
-            
-            console.log(err)
-            alert("Dang ky khong thanh cong")
-        }
         } else {
-            alert("Dien day du thong tin truoc khi dang ky")
+            Alert.alert("Vui lòng điền đầy đủ thông tin trước khi đăng nhập");
         }
-        
-    }
+    };
 
-    
 
     return (
         <View>
             <View style={{ marginBottom: 20 }}>
                 <Image
                     source={{ uri: "https://beyondtype1.org/wp-content/uploads/2016/05/BT1-TAKE-TO-THE-SKIES-HEADER-2021-1200x429.jpg" }}
-
                     style={{ height: 200, width: '100%' }} />
             </View>
 
@@ -96,7 +94,7 @@ const DangNhap = ({ navigation }) => {
 
                 <TouchableOpacity
                     style={{ width: '94%', marginLeft: 16, marginTop: 11, backgroundColor: 'rgb(34, 200, 247)', paddingVertical: 11, borderRadius: 20 }}
-                   onPress={handelLogin}
+                    onPress={handelLogin}
                 >
                     <Text style={{ color: 'white', textAlign: 'center' }}>
                         Login
@@ -116,6 +114,6 @@ const DangNhap = ({ navigation }) => {
             </View>
         </View>
     );
-}
+};
 
 export default DangNhap;
