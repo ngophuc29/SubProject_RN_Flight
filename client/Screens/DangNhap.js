@@ -28,13 +28,24 @@ const DangNhap = ({ navigation }) => {
                         avatar: data.avatar,
                         email: data.email,
                         created_at: data.created_at,
+                        role:data.role
                     };
 
                     // Lưu object vào AsyncStorage dưới dạng chuỗi JSON
                     await AsyncStorage.setItem('user', JSON.stringify(user));
 
                     // Điều hướng tới màn hình Home và truyền thông tin
-                    navigation.navigate("Home", user);
+                    navigation.navigate("Home", {
+                        id: data.id.toString(),
+                        username: username,
+                        avatar: data.avatar,
+                        email: data.email,
+                        created_at: data.created_at
+} );
+
+                     
+                    // navigation.navigate("Home" );
+
 
                     Alert.alert("Đăng nhập thành công");
 

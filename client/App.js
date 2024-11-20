@@ -19,19 +19,22 @@ import DangNhap from './Screens/DangNhap';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(null); // Dùng null để đại diện cho trạng thái loading
 
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        const user = await AsyncStorage.getItem('user'); // Kiểm tra xem có user không
-        if (user) {
-          setIsLoggedIn(true); // Nếu có, người dùng đã đăng nhập
+        const user = await AsyncStorage.getItem('user');
+        console.log('User loaded from AsyncStorage:', user); // Debugging log
+
+        // Kiểm tra nếu user có tồn tại và không phải là chuỗi rỗng
+        if (user && user !== "null" && user !== "") {
+          setIsLoggedIn(true);
         } else {
-          setIsLoggedIn(false); // Nếu không có, người dùng chưa đăng nhập
+          setIsLoggedIn(false);
         }
       } catch (error) {
-        console.log(error);
+        console.log('Error checking login status:', error);
         setIsLoggedIn(false); // Xử lý khi có lỗi
       }
     };
@@ -39,6 +42,10 @@ export default function App() {
     checkLoginStatus();
   }, []);
 
+  if (isLoggedIn === null) {
+    // Trả về màn hình loading hoặc không làm gì khi đang kiểm tra login status
+    return null; // Bạn có thể thay thế `null` bằng một loading indicator nếu muốn
+  }
 
   return (
     <NavigationContainer>

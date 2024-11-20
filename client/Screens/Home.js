@@ -4,30 +4,47 @@ import { Avatar, Icon, Card } from 'react-native-elements';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 const Home = ({ navigation, route }) => {
-    const { id, username, avatar, email, created_at } = route.params;
+    // const { id, username, avatar, email, created_at,role } = route.params;
     const [modalVisible, setModalVisible] = useState(false);
     const [userDetailsModalVisible, setUserDetailsModalVisible] = useState(false);
-    const [flightListModalVisible, setFlightListModalVisible] = useState(false); // New modal for flights
-    const [userDetails, setUserDetails] = useState({
-        id, username, email, avatar, created_at, password: '***'
-    });
-    const [originalDetails, setOriginalDetails] = useState({ username, email, avatar });
+    const [flightListModalVisible, setFlightListModalVisible] = useState(false);
+    const [userDetails, setUserDetails] = useState({});
     const [flights, setFlights] = useState([]); // State to store flights
 
-
+    // useEffect(() => {
+    //     const fetchLoginState = async () => {
+    //         try {
+    //             const user = await AsyncStorage.getItem('user');
+    //             if (user) {
+    //                 setUserDetails(JSON.parse(user)); // Set user data from AsyncStorage
+    //             }
+    //         } catch (error) {
+    //             console.log("Failed to load user data", error);
+    //         }
+    //     };
+    //     fetchLoginState();
+    // }, []);
     useEffect(() => {
         const fetchLoginState = async () => {
             try {
-                const user = await AsyncStorage.getItem('user');
-                if (user) {
-                    setUserDetails(JSON.parse(user));
+                const userFromStorage = await AsyncStorage.getItem('user');
+                const userFromParams = route.params;
+
+                // Prioritize params over AsyncStorage data
+                if (userFromParams) {
+                    setUserDetails(userFromParams); // Use user data from params if available
+                } else if (userFromStorage) {
+                    setUserDetails(JSON.parse(userFromStorage)); // Otherwise, use AsyncStorage
                 }
             } catch (error) {
                 console.log("Failed to load user data", error);
             }
         };
+
         fetchLoginState();
-    }, []);
+    }, [route.params]);
+
+
 
     const openUserDetails = () => {
         setModalVisible(false);
@@ -36,7 +53,7 @@ const Home = ({ navigation, route }) => {
 
     const handleUpdate = async () => {
         try {
-            await axios.put(`http://localhost:4000/api/users/${id}`, {
+            await axios.put(`http://localhost:4000/api/users/${userDetails.user_id}`, {
                 username: userDetails.username,
                 email: userDetails.email,
                 avatar: userDetails.avatar,
@@ -49,18 +66,9 @@ const Home = ({ navigation, route }) => {
         }
     };
 
-
-    const resetDetails = () => {
-        // Reset user details to the stored values
-        setUserDetails({
-            ...userDetails,
-            ...JSON.parse(localStorage.getItem("user"))
-        });
-    };
-
     const loadFlights = async () => {
         try {
-            const response = await axios.get(`http://localhost:4000/api/flights/${username}`);
+            const response = await axios.get(`http://localhost:4000/api/flights/${userDetails.username}`);
             setFlights(response.data.flights); // Assume the API returns a list of flights
         } catch (error) {
             console.log(error);
@@ -73,7 +81,6 @@ const Home = ({ navigation, route }) => {
         setModalVisible(false);
         setFlightListModalVisible(true);
     };
-
     const generateFlightCode = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
@@ -82,16 +89,26 @@ const Home = ({ navigation, route }) => {
         }
         return code;
     };
-
     const handleLogout = async () => {
         try {
-            await AsyncStorage.removeItem('user'); // Remove user data on logout
+            // await AsyncStorage.removeItem('user'); // Remove user data on logout
+            // const user = await AsyncStorage.getItem('user'); // Check if user is removed
+            // console.log('User after logout:', user); // Should return null if removed
+            // Xóa toàn bộ dữ liệu trong AsyncStorage
+
+            // Clear AsyncStorage data
+            await AsyncStorage.clear();
+            // Reset state and navigate to the login screen
+            setUserDetails({}); // Reset user details
+
+            setModalVisible(false)
             alert("Đăng xuất thành công");
             navigation.navigate("DangNhap"); // Redirect to login screen
         } catch (error) {
             alert("Đã có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.");
         }
     };
+
 
     return (
         <View style={styles.container}>
@@ -106,13 +123,13 @@ const Home = ({ navigation, route }) => {
                             <Text style={styles.headerSubtitle}>Welcome to flight booking</Text>
                         </View>
                         <TouchableOpacity onPress={() => setModalVisible(true)}>
-                            <Avatar rounded title="A" source={{ uri: avatar }} containerStyle={styles.avatar} />
+                            <Avatar rounded title="A" source={{ uri: userDetails.avatar }} containerStyle={styles.avatar} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 <View style={styles.searchContainer}>
-                    <TouchableOpacity onPress={() => navigation.navigate("BookingTabs", { username, avatar })}>
+                    <TouchableOpacity onPress={() => navigation.navigate("BookingTabs", { username: userDetails.username, avatar: userDetails.avatar })}>
                         <TextInput placeholder="Find a flight" style={styles.searchInput} />
                     </TouchableOpacity>
                 </View>
@@ -142,13 +159,13 @@ const Home = ({ navigation, route }) => {
                     <Icon name="home" type="material" color="#00A4FF" />
                     <Text>Home</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate("BookingTabs", { username, avatar })}>
+                <TouchableOpacity onPress={() => navigation.navigate("BookingTabs", { username: userDetails.username, avatar: userDetails.avatar })}>
                     <Icon name="explore" type="material" color="gray" />
                     <Text>Explore</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setModalVisible(true)}>
-                    <Avatar rounded title="A" source={{ uri: avatar }} containerStyle={styles.avatarfooter} />
-                    <Text>{username}</Text>
+                    <Avatar rounded title="A" source={{ uri: userDetails.avatar }} containerStyle={styles.avatarfooter} />
+                    <Text>{userDetails.username}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -203,7 +220,7 @@ const Home = ({ navigation, route }) => {
                             <Text style={styles.updateButtonText}>Cập nhật</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={resetDetails} style={styles.resetButton}>
+                        <TouchableOpacity onPress={() => setUserDetails({ ...userDetails, ...JSON.parse(localStorage.getItem('user')) })} style={styles.resetButton}>
                             <Text style={styles.resetButtonText}>Đặt lại</Text>
                         </TouchableOpacity>
 
@@ -214,12 +231,17 @@ const Home = ({ navigation, route }) => {
                 </View>
             </Modal>
 
+            {/* Flight List Modal */}
             {/* Flights List Modal */}
             <Modal animationType="slide" transparent={true} visible={flightListModalVisible} onRequestClose={() => setFlightListModalVisible(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>Chuyến bay của bạn</Text>
-                   
+                        <Text style={{
+                            fontSize: 20,
+                            fontWeight: 'bold',
+                            marginBottom: 10, alignSelf: 'center'
+                        }}>Chuyến bay của bạn</Text>
+
                         <ScrollView style={{ padding: 10 }}>
                             {Array.isArray(flights) && flights.length > 0 ? (
                                 flights
@@ -233,21 +255,46 @@ const Home = ({ navigation, route }) => {
                                             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 5 }}>
                                                 Mã chuyến bay: {generateFlightCode()}
                                             </Text>
-                                            <Text>{new Date(flight.departureDate).toLocaleDateString()} - {new Date(flight.returnDate).toLocaleDateString()}</Text>
+                                            <Text>{new Date(flight.departureDate).toLocaleDateString()} - {flight.flightType === "Round-Trip" ? new Date(flight.returnDate).toLocaleDateString() : 'Không có chuyến về'}</Text>
                                             <Text>Loại vé: {flight.selectedClass}</Text>
                                             <Text>Giá tổng: ${flight.totalPrice}</Text>
 
-                                            {/* Thông tin chuyến bay đi */}
-                                            <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>
-                                                Đi: {JSON.parse(flight.departureFlight).departureTime} - {JSON.parse(flight.departureFlight).arrivalTime}
-                                                (Hãng: {JSON.parse(flight.departureFlight).airline})
-                                            </Text>
+                                            {/* Xử lý Multi-City */}
+                                            {flight.flightType === "Multi-City" && flight.legs.length > 0 ? (
+                                                <View style={{ marginTop: 10 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Thông tin chuyến bay:</Text>
+                                                    {flight.legs.map((leg, legIndex) => (
+                                                        <View key={legIndex} style={{ marginTop: 5 }}>
+                                                            <Text style={{ fontSize: 14 }}>
+                                                                Chặng {legIndex + 1}: {leg.route} ({leg.stops}) - {leg.duration}
+                                                            </Text>
+                                                            <Text style={{ fontSize: 14, color: 'gray' }}>
+                                                                Khởi hành: {leg.departureTime} - Đến: {leg.arrivalTime} (Hãng: {leg.airline})
+                                                            </Text>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            ) : null}
 
-                                            {/* Thông tin chuyến bay về */}
-                                            <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>
-                                                Về: {JSON.parse(flight.returnFlight).departureTime} - {JSON.parse(flight.returnFlight).arrivalTime}
-                                                (Hãng: {JSON.parse(flight.returnFlight).airline})
-                                            </Text>
+                                            {/* Thông tin chuyến bay đi */}
+                                            {flight.departureFlight ? (
+                                                <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>
+                                                    Đi: {JSON.parse(flight.departureFlight).departureTime} - {JSON.parse(flight.departureFlight).arrivalTime}
+                                                    (Hãng: {JSON.parse(flight.departureFlight).airline})
+                                                </Text>
+                                            ) : (
+                                                <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>Thông tin chuyến bay đi không có</Text>
+                                            )}
+
+                                            {/* Thông tin chuyến bay về (chỉ hiển thị nếu là Round-Trip và có thông tin về chuyến bay về) */}
+                                            {flight.flightType === "Round-Trip" && flight.returnFlight !== "null" ? (
+                                                <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>
+                                                    Về: {JSON.parse(flight.returnFlight).departureTime} - {JSON.parse(flight.returnFlight).arrivalTime}
+                                                    (Hãng: {JSON.parse(flight.returnFlight).airline})
+                                                </Text>
+                                            ) : flight.flightType === "One-Way" ? (
+                                                <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>Không có chuyến bay về</Text>
+                                            ) : null}
 
                                             {/* Số lượng hành khách */}
                                             <Text>{flight.adultCount} người lớn, {flight.childrenCount} trẻ em, {flight.infantCount} em bé</Text>
@@ -257,6 +304,7 @@ const Home = ({ navigation, route }) => {
                                 <Text style={{ textAlign: 'center', fontSize: 16, color: 'gray' }}>Bạn chưa có chuyến bay nào.</Text>
                             )}
                         </ScrollView>
+
 
 
 
@@ -379,11 +427,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContainer: {
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
         width: '80%',
-        alignItems: 'center',
+        maxHeight: '80%', // Giới hạn chiều cao tối đa của modal
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
     },
     modalOption: {
         fontSize: 18,

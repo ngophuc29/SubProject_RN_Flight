@@ -82,7 +82,7 @@ const OneWay = ({ navigation, route }) => {
       setLoading(true);
       const response = await axios.get("https://api.api-ninjas.com/v1/city", {
         params: { name: query },
-        headers: { "X-Api-Key": "AHv0lH1DInE1twTDfSR4Fw==awuwVVV45UwKoO6A" },
+        headers: { "X-Api-Key": "u2WlhmSyRt3fHxKFsRKgtw==DIy7QEne0kcVZ53o" },
       });
 
       if (inputType === "from") {

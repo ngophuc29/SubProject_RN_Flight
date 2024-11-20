@@ -195,7 +195,7 @@ const ResultFlight = ({ navigation, route }) => {
         airline: "EcoWings",
         route: "LCY - JFK",
       },
-      price: 750,
+      totalPrice: 750,
       currency: "USD",
     },
     {
@@ -229,7 +229,7 @@ const ResultFlight = ({ navigation, route }) => {
         },
       ],
       currency: "USD",
-      price: 280,
+      totalPrice: 280,
     },// 2 Chặng Bay (Two Legs)
     {
       id: "12",
@@ -255,7 +255,7 @@ const ResultFlight = ({ navigation, route }) => {
         },
       ],
       currency: "USD",
-      price: 550,
+      totalPrice: 550,
     },
 
     // 3 Chặng Bay (Three Legs)
@@ -292,7 +292,7 @@ const ResultFlight = ({ navigation, route }) => {
         },
       ],
       currency: "USD",
-      price: 950,
+      totalPrice: 950,
     },
 
     // 4 Chặng Bay (Four Legs)
@@ -338,7 +338,7 @@ const ResultFlight = ({ navigation, route }) => {
         },
       ],
       currency: "USD",
-      price: 1200,
+      totalPrice: 1200,
     },
 
     // 5 Chặng Bay (Five Legs)
@@ -393,7 +393,7 @@ const ResultFlight = ({ navigation, route }) => {
         },
       ],
       currency: "USD",
-      price: 1480,
+      totalPrice: 1480,
     },
 
     // 6 Chặng Bay (Six Legs)
@@ -457,7 +457,7 @@ const ResultFlight = ({ navigation, route }) => {
         },
       ],
       currency: "USD",
-      price: 1830,
+      totalPrice: 1830,
     }
   ]);
   const [filteredFlights, setFilteredFlights] = useState(flightsData);
