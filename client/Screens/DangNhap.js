@@ -36,11 +36,12 @@ const DangNhap = ({ navigation }) => {
 
                     // Điều hướng tới màn hình Home và truyền thông tin
                     navigation.navigate("Home", {
-                        id: data.id.toString(),
+                        user_id: data.id.toString(),
                         username: username,
                         avatar: data.avatar,
                         email: data.email,
-                        created_at: data.created_at
+                        created_at: data.created_at,
+                        role: data.role
 } );
 
                      

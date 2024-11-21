@@ -155,7 +155,7 @@ app.put('/api/users/:id', async (req, res) => {
     const { username, email, avatar } = req.body;
     const result = await User.updateOne(
       { _id: id },
-      { username, email, avatar }
+      { username, email, avatar  }
     );
     if (result.matchedCount === 0) {
       res.status(404).json({ message: 'Không tìm thấy người dùng' });
@@ -167,7 +167,27 @@ app.put('/api/users/:id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+app.put('/api/admin/users/:id', async (req, res) => {
+  console.log('Update user');
+  try {
+    const { id } = req.params;
+    console.log('Update user',id);
 
+    const { username, email, avatar,role } = req.body;
+    const result = await User.updateOne(
+      { _id: id },
+      { username, email, avatar, role }
+    );
+    if (result.matchedCount === 0) {
+      res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    } else {
+      res.json({ message: 'Cập nhật người dùng thành công' });
+    }
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 // ------------------- Các route API cho Chuyến bay -------------------
 
 // POST - Thêm chuyến bay mới
@@ -215,6 +235,92 @@ app.get('/api/flights/:username', async (req, res) => {
   }
 });
 
+// PUT - Cập nhật chuyến bay
+app.put('/api/flights/:id', async (req, res) => {
+  const { id } = req.params; // Lấy ID chuyến bay từ URL path
+  const updatedData = req.body; // Dữ liệu mới để cập nhật
+
+  try {
+    const updatedFlight = await Flight.findByIdAndUpdate(id, updatedData, { new: true });
+
+    if (!updatedFlight) {
+      return res.status(404).json({ message: 'Chuyến bay không tồn tại' });
+    }
+
+    res.json({ message: 'Cập nhật chuyến bay thành công', flight: updatedFlight });
+  } catch (err) {
+    console.error('Error updating flight:', err);
+    res.status(500).json({ message: 'Lỗi khi cập nhật chuyến bay' });
+  }
+});
+// DELETE - Xóa chuyến bay
+app.delete('/api/flights/:id', async (req, res) => {
+  const { id } = req.params; // Lấy ID chuyến bay từ URL path
+
+  try {
+    const deletedFlight = await Flight.findByIdAndDelete(id);
+
+    if (!deletedFlight) {
+      return res.status(404).json({ message: 'Chuyến bay không tồn tại' });
+    }
+
+    res.json({ message: 'Chuyến bay đã được xóa thành công' });
+  } catch (err) {
+    console.error('Error deleting flight:', err);
+    res.status(500).json({ message: 'Lỗi khi xóa chuyến bay' });
+  }
+});
+
+//thống kê
+
+app.get('/api/admin/statistics', async (req, res) => {
+  try {
+    // Lấy tất cả chuyến bay và người dùng
+    const flights = await Flight.find();
+    const users = await User.find();
+
+    let totalFlights = flights.length; // Tổng số chuyến bay
+    let totalUsers = users.length; // Tổng số người dùng
+    let totalRevenue = 0; // Tổng doanh thu
+    let totalAdults = 0; // Tổng số người lớn
+    let totalChildren = 0; // Tổng số trẻ em
+    let totalInfants = 0; // Tổng số trẻ sơ sinh
+
+    // Khởi tạo đối tượng để thống kê chuyến bay theo loại
+    let flightTypes = {
+      "One-Way": 0,
+      "Round-Trip": 0,
+      "Multi-City": 0
+    };
+
+    // Thống kê thông tin chuyến bay và doanh thu
+    flights.forEach(flight => {
+      // Thêm doanh thu
+      totalRevenue += flight.price;
+
+      // Thêm số lượng hành khách
+      totalAdults += flight.adultCount;
+      totalChildren += flight.childrenCount;
+      totalInfants += flight.infantCount;
+
+      // Thống kê theo loại chuyến bay
+      flightTypes[flight.flightType] = (flightTypes[flight.flightType] || 0) + 1;
+    });
+
+    res.json({
+      totalFlights,
+      totalUsers,
+      totalRevenue,
+      totalAdults,
+      totalChildren,
+      totalInfants,
+      flightTypes
+    });
+  } catch (err) {
+    console.error('Error fetching statistics:', err);
+    res.status(500).json({ message: 'Lỗi khi lấy thống kê chuyến bay' });
+  }
+});
 
 // Khởi động server
 app.listen(4000, () => {

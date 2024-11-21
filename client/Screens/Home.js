@@ -4,7 +4,7 @@ import { Avatar, Icon, Card } from 'react-native-elements';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 const Home = ({ navigation, route }) => {
-    // const { id, username, avatar, email, created_at,role } = route.params;
+    // const { user_id, username, avatar, email, created_at,role } = route.params;
     const [modalVisible, setModalVisible] = useState(false);
     const [userDetailsModalVisible, setUserDetailsModalVisible] = useState(false);
     const [flightListModalVisible, setFlightListModalVisible] = useState(false);
@@ -82,12 +82,7 @@ const Home = ({ navigation, route }) => {
         setFlightListModalVisible(true);
     };
     const generateFlightCode = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let code = '';
-        for (let i = 0; i < 6; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
+        return `FL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     };
     const handleLogout = async () => {
         try {
@@ -110,6 +105,36 @@ const Home = ({ navigation, route }) => {
     };
 
 
+    const openAdminManagement = (type) => {
+        setModalVisible(false);
+        switch (type) {
+            case "user":
+                navigation.navigate("UserManagementScreen"); // Màn hình quản lý người dùng
+                break;
+            case "passenger":
+                navigation.navigate("PassengerManagementScreen"); // Màn hình quản lý hành khách
+                break;
+            case "flight":
+                navigation.navigate("FlightManagementScreen"); // Màn hình quản lý chuyến bay
+                break;
+            case "statistics":
+                navigation.navigate("StatisticsScreen"); // Màn hình thống kê
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Hàm render thông tin hành khách
+    const renderPassenger = (passengerType, passengers) => {
+        return passengers.map((passenger, index) => (
+            <View key={index} style={styles.passengerItem}>
+                <Text>{`${passenger.firstName} ${passenger.lastName} (${passenger.gender})`}</Text>
+                {passenger.email && <Text>Email: {passenger.email}</Text>}
+                {passenger.phone && <Text>Phone: {passenger.phone}</Text>}
+            </View>
+        ));
+    };
     return (
         <View style={styles.container}>
             <ScrollView stickyHeaderIndices={[0]} contentContainerStyle={styles.scrollContainer}>
@@ -176,9 +201,31 @@ const Home = ({ navigation, route }) => {
                         <TouchableOpacity onPress={openUserDetails}>
                             <Text style={styles.modalOption}>Xem thông tin</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={openFlightList}> {/* New button */}
-                            <Text style={styles.modalOption}>Xem chuyến bay của bạn</Text>
-                        </TouchableOpacity>
+                        {userDetails.role !== "ADMIN" && (
+
+                            <TouchableOpacity onPress={openFlightList}>
+                                <Text style={styles.modalOption}>Xem chuyến bay của bạn</Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Hiển thị các mục quản lý nếu role là ADMIN */}
+                        {userDetails.role === "ADMIN" && (
+                            <>
+                                <TouchableOpacity onPress={() => openAdminManagement("user")}>
+                                    <Text style={styles.modalOption}>Quản lý người dùng</Text>
+                                </TouchableOpacity>
+                                {/* <TouchableOpacity onPress={() => openAdminManagement("passenger")}>
+                                    <Text style={styles.modalOption}>Quản lý hành khách</Text>
+                                </TouchableOpacity> */}
+                                <TouchableOpacity onPress={() => openAdminManagement("flight")}>
+                                    <Text style={styles.modalOption}>Quản lý chuyến bay</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => openAdminManagement("statistics")}>
+                                    <Text style={styles.modalOption}>Thống kê</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
                         <TouchableOpacity onPress={handleLogout}>
                             <Text style={styles.modalOption}>Đăng xuất</Text>
                         </TouchableOpacity>
@@ -296,8 +343,25 @@ const Home = ({ navigation, route }) => {
                                                 <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>Không có chuyến bay về</Text>
                                             ) : null}
 
+                                            {/* Hiển thị hành khách */}
+                                            <View style={styles.passengerSection}>
+
+                                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 5 }} >Thông tin Hành Khách</Text>
+
+                                                <Text style={{ fontSize: 15, fontWeight: 'bold', marginBottom: 5 }}>Hành khách người lớn:</Text>
+                                                {renderPassenger('adults', flight.travellers[0].adults)}
+
+                                                <Text style={{ fontSize: 15, fontWeight: 'bold', marginBottom: 5 }}>Hành khách trẻ em:</Text>
+                                                {renderPassenger('children', flight.travellers[0].children)}
+
+                                                <Text style={{ fontSize: 15, fontWeight: 'bold', marginBottom: 5 }}>Hành khách em bé:</Text>
+                                                {renderPassenger('infants', flight.travellers[0].infants)}
+                                            </View>
                                             {/* Số lượng hành khách */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 5 }} >Tổng số hành khách</Text>
+
                                             <Text>{flight.adultCount} người lớn, {flight.childrenCount} trẻ em, {flight.infantCount} em bé</Text>
+
                                         </View>
                                     ))
                             ) : (

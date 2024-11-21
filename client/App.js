@@ -16,6 +16,10 @@ import BookingSuccess from "./Screens/BookingSuccess";
 import DangKy from './Screens/DangKy';
 import DangNhap from './Screens/DangNhap';
 
+import UserManagementScreen from "./Screens/ADMIN/UserManagementScreen";
+import FlightManagementScreen from "./Screens/ADMIN/FlightManagementScreen";
+import PassengerManagementScreen from "./Screens/ADMIN/PassengerManagementScreen";
+import StatisticsScreen from "./Screens/ADMIN/StatisticsScreen";
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -76,6 +80,14 @@ export default function App() {
         <Stack.Screen name="BookingSuccess" component={BookingSuccess} />
         <Stack.Screen name="DangKy" component={DangKy} />
         <Stack.Screen name="DangNhap" component={DangNhap} />
+
+        <Stack.Screen name="UserManagementScreen" component={UserManagementScreen} />
+        <Stack.Screen name="FlightManagementScreen" component={FlightManagementScreen} />
+        <Stack.Screen name="PassengerManagementScreen" component={PassengerManagementScreen} />
+        <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
+
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );
